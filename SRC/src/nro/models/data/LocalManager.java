@@ -99,6 +99,9 @@ public class LocalManager {
             LocalManager.DB_USER = envOrDefault("DB_USER", LocalManager.DB_USER);
             LocalManager.DB_PASSWORD = envOrDefault("DB_PASSWORD", LocalManager.DB_PASSWORD);
             Logger.log(Logger.RED, "Successfully loaded file properties!\n");
+            Logger.log(Logger.GREEN, "Database driver: " + LocalManager.DRIVER
+                    + ", server: " + LocalManager.DB_HOST + ":" + LocalManager.DB_PORT
+                    + ", database: " + LocalManager.DB_NAME + "\n");
         } catch (final IOException | NumberFormatException ex) {
             Logger.log(Logger.RED, "Không thể load file properties!\n");
         } finally {

@@ -2,9 +2,8 @@ name: teamobi2026
 
 services:
   game-server:
-    # Pin the image that includes MariaDB Connector/J. This avoids CasaOS
-    # reusing an older locally cached `latest` image.
-    image: patcoder97/teamobi2026:sha-fcfff6a
+    # A versioned tag prevents CasaOS from reusing an older cached image.
+    image: patcoder97/teamobi2026:v1.0.5
     container_name: teamobi2026-game
     restart: unless-stopped
     environment:
@@ -128,6 +127,6 @@ x-casaos:
   category: Others
   architectures:
     - amd64
-  version: "1.0.4"
+  version: "1.0.5"
   update_at: "2026-10-03"
   repo: https://github.com/PATCoder97/nro-sv

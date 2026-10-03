@@ -11,7 +11,8 @@ ARG MARIADB_CONNECTOR_SHA256=919b8c1c771d9ee3465811462f242c9543ab401e140c64988dd
 RUN curl --fail --silent --show-error --location \
         "https://repo.maven.apache.org/maven2/org/mariadb/jdbc/mariadb-java-client/${MARIADB_CONNECTOR_VERSION}/mariadb-java-client-${MARIADB_CONNECTOR_VERSION}.jar" \
         --output "lib/mariadb-java-client-${MARIADB_CONNECTOR_VERSION}.jar" \
-    && echo "${MARIADB_CONNECTOR_SHA256}  lib/mariadb-java-client-${MARIADB_CONNECTOR_VERSION}.jar" | sha256sum --check --strict
+    && echo "${MARIADB_CONNECTOR_SHA256}  lib/mariadb-java-client-${MARIADB_CONNECTOR_VERSION}.jar" | sha256sum --check --strict \
+    && rm -f lib/mysql-connector-java*.jar
 RUN ant clean jar
 
 FROM eclipse-temurin:17-jre-jammy
