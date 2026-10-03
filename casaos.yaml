@@ -6,6 +6,7 @@ services:
     container_name: teamobi2026-game
     restart: unless-stopped
     environment:
+      DB_DRIVER: org.mariadb.jdbc.Driver
       DB_HOST: database
       DB_PORT: "3306"
       DB_NAME: team2026
@@ -125,6 +126,6 @@ x-casaos:
   category: Others
   architectures:
     - amd64
-  version: "1.0.2"
+  version: "1.0.3"
   update_at: "2026-10-03"
   repo: https://github.com/PATCoder97/nro-sv

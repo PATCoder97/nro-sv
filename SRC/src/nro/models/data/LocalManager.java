@@ -191,9 +191,10 @@ public class LocalManager {
 
     private static HikariConfig createConfig(String poolName, String databaseName) {
         HikariConfig config = new HikariConfig();
+        String jdbcScheme = DRIVER != null && DRIVER.startsWith("org.mariadb") ? "mariadb" : "mysql";
         config.setDriverClassName(DRIVER);
-        config.setJdbcUrl(String.format("jdbc:mysql://%s:%s/%s?useUnicode=yes&characterEncoding=UTF-8",
-                DB_HOST, DB_PORT, databaseName));
+        config.setJdbcUrl(String.format("jdbc:%s://%s:%s/%s?useUnicode=true&characterEncoding=UTF-8",
+                jdbcScheme, DB_HOST, DB_PORT, databaseName));
         config.setUsername(DB_USER);
         config.setPassword(DB_PASSWORD);
         config.setMinimumIdle(MIN_CONN);

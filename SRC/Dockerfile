@@ -1,11 +1,17 @@
 FROM eclipse-temurin:17-jdk-jammy AS builder
 
 RUN apt-get update \
-    && apt-get install --yes --no-install-recommends ant \
+    && apt-get install --yes --no-install-recommends ant ca-certificates curl \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /build
 COPY . .
+ARG MARIADB_CONNECTOR_VERSION=3.5.10
+ARG MARIADB_CONNECTOR_SHA256=919b8c1c771d9ee3465811462f242c9543ab401e140c64988ddbf1d8abcb18b2
+RUN curl --fail --silent --show-error --location \
+        "https://repo.maven.apache.org/maven2/org/mariadb/jdbc/mariadb-java-client/${MARIADB_CONNECTOR_VERSION}/mariadb-java-client-${MARIADB_CONNECTOR_VERSION}.jar" \
+        --output "lib/mariadb-java-client-${MARIADB_CONNECTOR_VERSION}.jar" \
+    && echo "${MARIADB_CONNECTOR_SHA256}  lib/mariadb-java-client-${MARIADB_CONNECTOR_VERSION}.jar" | sha256sum --check --strict
 RUN ant clean jar
 
 FROM eclipse-temurin:17-jre-jammy
