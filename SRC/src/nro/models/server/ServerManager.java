@@ -295,7 +295,7 @@ public class ServerManager {
 
     private static void activeCommandLine() {
         Scanner sc = new Scanner(System.in);
-        while (true) {
+        while (sc.hasNextLine()) {
             String line = sc.nextLine();
             switch (line) {
                 case "bt":

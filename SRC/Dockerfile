@@ -13,7 +13,8 @@ FROM eclipse-temurin:17-jre-jammy
 RUN useradd --create-home --uid 10001 game
 WORKDIR /app
 
-COPY --from=builder /build/dist/ ./dist/
+COPY --from=builder /build/dist/NgocRongOnline.jar ./app.jar
+COPY --from=builder /build/lib/ ./lib/
 COPY --from=builder /build/data/ ./data/
 COPY --from=builder /build/Config.properties /build/maintenanceConfig.txt ./
 
@@ -23,4 +24,4 @@ RUN mkdir -p /app/log \
 USER game
 EXPOSE 14445/tcp
 
-ENTRYPOINT ["java", "-server", "-Dfile.encoding=UTF-8", "-jar", "dist/NgocRongOnline.jar"]
+ENTRYPOINT ["java", "-server", "-Dfile.encoding=UTF-8", "-cp", "app.jar:lib/*", "nro.models.server.ServerManager"]
