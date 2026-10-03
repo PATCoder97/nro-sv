@@ -6,6 +6,7 @@ RUN apt-get update \
 
 WORKDIR /build
 COPY . .
+RUN test -f data/map/tile_set_info
 ARG MARIADB_CONNECTOR_VERSION=3.5.10
 ARG MARIADB_CONNECTOR_SHA256=919b8c1c771d9ee3465811462f242c9543ab401e140c64988ddbf1d8abcb18b2
 RUN curl --fail --silent --show-error --location \
