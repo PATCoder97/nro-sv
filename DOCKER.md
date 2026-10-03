@@ -51,3 +51,16 @@ Tao hai Repository Secrets tai **GitHub repository > Settings > Secrets and vari
 - `DOCKERHUB_TOKEN`: Docker Hub access token co quyen Read & Write.
 
 Khong ghi token truc tiep vao workflow, `.env` hay bat ky file nao duoc commit. Image se duoc push toi `DOCKERHUB_USERNAME/teamobi2026` voi cac tag nhu `latest`, ten nhanh, tag phien ban va `sha-...`.
+
+## Cai tren CasaOS
+
+Sau khi GitHub Actions build thanh cong, vao CasaOS, chon **App Store > Custom Install > Import** va tai file `casaos.yaml` len.
+
+Truoc khi cai, sua `SERVER_IP` thanh IP LAN/IP public/domain cua may CasaOS. Game dung TCP `14445`; phpMyAdmin mo tai cong HTTP `18080`. Dang nhap phpMyAdmin bang user `root`, mat khau mac dinh `teamobi2026-root-test` va nen doi mat khau neu trien khai ngoai moi truong test.
+
+File CasaOS mac dinh dung hai image Docker Hub:
+
+- `patcoder97/teamobi2026:latest`
+- `patcoder97/teamobi2026-db:latest`
+
+Neu Docker Hub username khac `patcoder97`, sua hai dong `image:` trong `casaos.yaml` cho dung truoc khi import.

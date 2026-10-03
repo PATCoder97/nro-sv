@@ -1,0 +1,137 @@
+name: teamobi2026
+
+services:
+  game-server:
+    image: patcoder97/teamobi2026:latest
+    container_name: teamobi2026-game
+    restart: unless-stopped
+    environment:
+      DB_HOST: database
+      DB_PORT: "3306"
+      DB_NAME: team2026
+      DB_USER: teamobi
+      DB_PASSWORD: teamobi2026-test
+      SERVER_NAME: NRO
+      SERVER_IP: 127.0.0.1
+      SERVER_PORT: "14445"
+      TZ: Asia/Ho_Chi_Minh
+    ports:
+      - target: 14445
+        published: "14445"
+        protocol: tcp
+    volumes:
+      - type: volume
+        source: game-logs
+        target: /app/log
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      - teamobi-network
+    x-casaos:
+      ports:
+        - container: "14445"
+          description:
+            en_US: Game server TCP port
+            vi_VN: Cổng TCP của game server
+      envs:
+        - container: SERVER_IP
+          description:
+            en_US: Public or LAN IP/domain of the CasaOS server
+            vi_VN: IP LAN, IP public hoặc domain của máy CasaOS
+        - container: SERVER_PORT
+          description:
+            en_US: Game server TCP port
+            vi_VN: Cổng TCP của game server
+
+  database:
+    image: patcoder97/teamobi2026-db:latest
+    container_name: teamobi2026-database
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: team2026
+      MARIADB_USER: teamobi
+      MARIADB_PASSWORD: teamobi2026-test
+      MARIADB_ROOT_PASSWORD: teamobi2026-root-test
+      TZ: Asia/Ho_Chi_Minh
+    volumes:
+      - type: bind
+        source: /DATA/AppData/$AppID/database
+        target: /var/lib/mysql
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - mysqladmin ping -h 127.0.0.1 -u root -p"$${MARIADB_ROOT_PASSWORD}" --silent
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 45s
+    networks:
+      - teamobi-network
+    x-casaos:
+      volumes:
+        - container: /var/lib/mysql
+          description:
+            en_US: MariaDB persistent data
+            vi_VN: Dữ liệu MariaDB lưu lâu dài
+
+  phpmyadmin:
+    image: phpmyadmin:5.2
+    container_name: teamobi2026-phpmyadmin
+    restart: unless-stopped
+    environment:
+      PMA_HOST: database
+      PMA_PORT: "3306"
+      UPLOAD_LIMIT: 256M
+      TZ: Asia/Ho_Chi_Minh
+    ports:
+      - target: 80
+        published: "18080"
+        protocol: tcp
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      - teamobi-network
+    x-casaos:
+      ports:
+        - container: "80"
+          description:
+            en_US: phpMyAdmin web interface
+            vi_VN: Giao diện web phpMyAdmin
+
+networks:
+  teamobi-network:
+    driver: bridge
+
+volumes:
+  game-logs:
+
+x-casaos:
+  id: com.patcoder97.teamobi2026
+  main: phpmyadmin
+  index: /
+  port_map: "18080"
+  scheme: http
+  icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/java.png
+  title:
+    en_US: Teamobi 2026 Server
+    vi_VN: Máy chủ Teamobi 2026
+  tagline:
+    en_US: Java game server with MariaDB and phpMyAdmin
+    vi_VN: Game server Java kèm MariaDB và phpMyAdmin
+  description:
+    en_US: Teamobi 2026 game server. TCP port 14445; phpMyAdmin port 18080.
+    vi_VN: Máy chủ game Teamobi 2026. Cổng game TCP 14445; phpMyAdmin cổng 18080.
+  tips:
+    before_install:
+      en_US: Change SERVER_IP to your CasaOS LAN/public IP or domain before installing.
+      vi_VN: Hãy đổi SERVER_IP thành IP LAN, IP public hoặc domain của máy CasaOS trước khi cài.
+  author: PATCoder97
+  developer: PATCoder97
+  category: Others
+  architectures:
+    - amd64
+  version: "1.0.0"
+  update_at: "2026-10-03"
+  repo: https://github.com/PATCoder97/nro-sv

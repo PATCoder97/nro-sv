@@ -1,0 +1,4 @@
+**
+!database team2026.sql
+!docker/
+!docker/database.Dockerfile
