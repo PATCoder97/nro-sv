@@ -385,7 +385,7 @@ document.addEventListener('DOMContentLoaded', function() {
                  <p class="mb-2">Tất cả quyền được bảo lưu.</p>
                  <hr>
                  <p class="mb-2"><strong>Thông tin liên hệ:</strong></p>
-                 <p class="mb-1">• Website: venus.meliodas.info.vn</p>
+                 <p class="mb-1">• Website: <?php echo htmlspecialchars($_SERVER['HTTP_HOST'] ?? ''); ?></p>
                  <p class="mb-1">• Email: contact@meliodas.info.vn</p>
                  <p class="mb-1">• Facebook: <a href="https://www.facebook.com/ngocrongvenus" target="_blank" class="text-primary">Ngọc Rồng Venus Official</a></p>
                  <hr>

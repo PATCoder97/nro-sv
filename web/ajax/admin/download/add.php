@@ -7,7 +7,7 @@ if (empty($_SERVER['HTTP_REFERER'])) {
 
 require_once $_SERVER['DOCUMENT_ROOT'] . "/cvhvn/autoload.php";
 
-if (isset($user['is_admin'])) {
+if (!empty($user) && !empty($user['is_admin'])) {
     if (isset($_POST['text']) && isset($_POST['url']) && isset($_POST['link']) && !empty($_POST['image']) && !empty($_POST['type'])) {
         $current_data = $CVH->get_row("SELECT download FROM cvh_setting WHERE id = 1");
         $current_download = !empty($current_data) ? json_decode($current_data['download'], true) : [];

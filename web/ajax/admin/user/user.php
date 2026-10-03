@@ -5,7 +5,11 @@ if (empty($_SERVER['HTTP_REFERER'])) {
     exit();
 }
 require_once $_SERVER['DOCUMENT_ROOT'] . "/cvhvn/autoload.php";
-$type = abs($_GET['type']);
+if (empty($user) || empty($user['is_admin'])) {
+    $CVH->Ex(false, "Bạn không có quyền thực hiện thao tác này!");
+    exit();
+}
+$type = abs((int) ($_GET['type'] ?? 0));
 if ($type == '1') {
     $type = $_POST['type'];
     $username = $_POST['username'];

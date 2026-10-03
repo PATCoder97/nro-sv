@@ -20,18 +20,18 @@ if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'] ?? '', 
 }
 {
     if ($_POST['type'] == 'Add') {
-        $id = abs($_POST['id']);
-        $luot = abs($_POST['number']);
-        if (isset($id)) {
-            $table = 'cvh_giftcode';
-            $data = array(
-                "luot" => $luot
-            );
-            $where = 'id = "' . $id . '"';
-            $CVH->update($table, $data, $where);
-            $CVH->Ex(true, "Cập nhật thành công!");
+        $id = abs((int) ($_POST['id'] ?? 0));
+        $luot = abs((int) ($_POST['number'] ?? 0));
+        if ($id > 0) {
+            $conn = $CVH->connect_db();
+            $stmt = $conn->prepare('UPDATE giftcode SET count_left = ? WHERE id = ?');
+            $stmt->bind_param('ii', $luot, $id);
+            $stmt->execute();
+            $updated = $stmt->affected_rows;
+            $stmt->close();
+            $CVH->Ex($updated >= 0, $updated >= 0 ? "Cập nhật thành công!" : "Không thể cập nhật giftcode!");
         } else {
-            $CVH->Ex(true, "Có lỗi xảy ra!");
+            $CVH->Ex(false, "Giftcode không hợp lệ!");
         }
     }
 }

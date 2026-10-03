@@ -21,12 +21,17 @@ if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'] ?? '', 
 }
 {
     if ($_POST['type'] == 'Del_Gift') {
-        $id = abs($_POST['id']);
-        if (isset($id)) {
-            mysqli_query($CVH->connect_db(), "DELETE FROM `cvh_giftcode` WHERE `id`='" . $id . "'");
-            $CVH->Ex(true, "Xóa giftcode thành công!");
+        $id = abs((int) ($_POST['id'] ?? 0));
+        if ($id > 0) {
+            $conn = $CVH->connect_db();
+            $stmt = $conn->prepare('DELETE FROM giftcode WHERE id = ?');
+            $stmt->bind_param('i', $id);
+            $stmt->execute();
+            $deleted = $stmt->affected_rows > 0;
+            $stmt->close();
+            $CVH->Ex($deleted, $deleted ? "Xóa giftcode thành công!" : "Giftcode không tồn tại!");
         } else {
-            $CVH->Ex(true, "Giftcode không tồn tại!");
+            $CVH->Ex(false, "Giftcode không hợp lệ!");
         }
     }
 }

@@ -110,6 +110,7 @@ services:
     environment:
       - CARD_PARTNER_ID=
       - CARD_PARTNER_KEY=
+      - CARD_CALLBACK_URL=
       - DB_HOST=database
       - DB_NAME=team2026
       - DB_PASSWORD=teamobi2026-test
@@ -248,4 +249,4 @@ x-casaos:
     en_US: Teamobi 2026 Server
     vi_VN: Máy chủ Teamobi 2026
   update_at: 2026-10-03T00:00:00Z
-  version: 1.1.1
+  version: 1.1.2

@@ -15,16 +15,18 @@ if ($user) {
             </div>
             <div class="mb-3">
                 <label class="form-label">Tài khoản</label>
-                <input type="text" name="username" class="form-control form-control-lg fs-15px" value="" placeholder="Nhập tài khoản">
+                <input type="text" name="username" class="form-control form-control-lg fs-15px" value=""
+                    minlength="4" maxlength="9" autocomplete="username" required placeholder="Nhập tài khoản (4-9 ký tự)">
             </div>
             <div class="mb-3">
                 <label class="form-label">Mật khẩu</label>
-                <input type="password" name="password" class="form-control form-control-lg fs-15px" value="" placeholder="Nhập mật khẩu">
+                <input type="password" name="password" class="form-control form-control-lg fs-15px" value=""
+                    minlength="4" maxlength="9" autocomplete="new-password" required placeholder="Nhập mật khẩu (4-9 ký tự)">
             </div>
             <div class="mb-3">
                 <label class="form-label">Nhập lại mật khẩu</label>
-                <input type="password"  name="repassword"  class="form-control form-control-lg fs-15px" value=""
-                    placeholder="Nhập lại mật khẩu">
+                <input type="password" name="repassword" class="form-control form-control-lg fs-15px" value=""
+                    minlength="4" maxlength="9" autocomplete="new-password" required placeholder="Nhập lại mật khẩu">
             </div>
             <?php if (!empty($config['recaptcha_site_key'])): ?>
             <div class="mb-3">

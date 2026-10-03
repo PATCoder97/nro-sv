@@ -5,6 +5,10 @@ if (empty($_SERVER['HTTP_REFERER'])) {
     exit();
 }
 require_once $_SERVER['DOCUMENT_ROOT'] . "/cvhvn/autoload.php";
+if (empty($user) || empty($user['is_admin'])) {
+    http_response_code(403);
+    exit('Forbidden');
+}
 $code = md5(rand_string(10));
 ?>
 <div class="row form_gift" data-row="<?= $code; ?>">

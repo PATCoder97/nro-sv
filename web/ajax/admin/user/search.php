@@ -5,6 +5,14 @@ if (empty($_SERVER['HTTP_REFERER'])) {
     exit();
 }
 require_once $_SERVER['DOCUMENT_ROOT'] . "/cvhvn/autoload.php";
+if (empty($user) || empty($user['is_admin'])) {
+    http_response_code(403);
+    exit('Forbidden');
+}
+if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'] ?? '', $_POST['csrf_token'])) {
+    http_response_code(403);
+    exit;
+}
 $output = '';
 if (isset($_POST['query'])) {
     $search = mysqli_real_escape_string($CVH->connect_db(), $_POST['query']);
@@ -12,7 +20,7 @@ if (isset($_POST['query'])) {
     if (empty($search)) {
         $query = "SELECT player.*, account.* 
                   FROM player 
-                  INNER JOIN account ON player.account_`id = account.id
+                  INNER JOIN account ON player.account_id = account.id
                   ORDER BY account.id DESC";
         $result = mysqli_query($CVH->connect_db(), $query);
     } else {

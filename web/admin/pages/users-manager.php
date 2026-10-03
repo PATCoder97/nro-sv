@@ -1,5 +1,8 @@
 <?php
 $kmess = 20; // Số phim hiện trong mỗi page
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
 $page = isset($_REQUEST['page']) && $_REQUEST['page'] > 0 ? intval($_REQUEST['page']) : 1;
 $start = isset($_REQUEST['page']) ? $page * $kmess - $kmess : (isset($_GET['start']) ? abs(intval($_GET['start'])) : 0);
 $result = mysqli_query($CVH->connect_db(), "SELECT player.*, account.*  FROM player INNER JOIN account ON player.account_id = account.id ORDER BY account.id DESC LIMIT $start, $kmess");
@@ -48,7 +51,8 @@ $tong = mysqli_num_rows(mysqli_query($CVH->connect_db(), "SELECT player.*, accou
                                             url: '/ajax/admin/user/search.php',
                                             method: 'POST',
                                             data: {
-                                                query: query
+                                                query: query,
+                                                csrf_token: '<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>'
                                             },
                                             success: function(data) {
                                                 $('#result').html(data);
@@ -216,7 +220,8 @@ $tong = mysqli_num_rows(mysqli_query($CVH->connect_db(), "SELECT player.*, accou
                                 type: 'POST',
                                 data: {
                                     status: status,
-                                    id: id
+                                    id: id,
+                                    csrf_token: '<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>'
                                 },
                                 success: function(response) {
                                     console.log(response);
@@ -237,7 +242,8 @@ $tong = mysqli_num_rows(mysqli_query($CVH->connect_db(), "SELECT player.*, accou
                                 type: 'POST',
                                 data: {
                                     status: status,
-                                    id: id
+                                    id: id,
+                                    csrf_token: '<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>'
                                 },
                                 success: function(response) {
                                     console.log(response);
@@ -263,7 +269,8 @@ $tong = mysqli_num_rows(mysqli_query($CVH->connect_db(), "SELECT player.*, accou
                                     url: '/ajax/admin/user/delete.php',
                                     data: {
                                         type: 'Del_Mem',
-                                        id: id
+                                        id: id,
+                                        csrf_token: '<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>'
                                     },
                                     success: function(response) {
                                         var data = JSON.parse(response);

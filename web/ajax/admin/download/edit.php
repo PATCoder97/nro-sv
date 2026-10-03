@@ -7,7 +7,7 @@ if (empty($_SERVER['HTTP_REFERER'])) {
 
 require_once $_SERVER['DOCUMENT_ROOT'] . "/cvhvn/autoload.php";
 file_put_contents('debug_post.txt', print_r($_POST, true));
-if (isset($user['is_admin'])) {
+if (!empty($user) && !empty($user['is_admin'])) {
     if (
         isset($_POST['id']) &&
         isset($_POST['text']) &&

@@ -5,6 +5,7 @@ date_default_timezone_set('Asia/Ho_Chi_Minh');
 
 class System
 {
+    private $lastInsertId = 0;
 
 
     /***  Hàm gọi tự động các hàm khác  ***/
@@ -24,7 +25,7 @@ class System
             $DB['PASSWORD'],
             $DB['TABLE']
         ) or die("Không Thể Kết Nối Tới Cơ Sở Dữ Liệu!");
-        $conn->set_charset("utf8");
+        $conn->set_charset("utf8mb4");
         return $conn;
     }
 
@@ -51,20 +52,26 @@ class System
     }
     public function insert($table, $data)
     {
-        $field_list = '';
-        $value_list = '';
+        $conn = $this->connect_db();
+        $fields = [];
+        $values = [];
         foreach ($data as $key => $value) {
-            $field_list .= ",$key";
-            $value_list .= ",'" . mysqli_real_escape_string($this->connect_db(), $value) . "'";
+            $fields[] = '`' . str_replace('`', '', $key) . '`';
+            $values[] = $value === null
+                ? 'NULL'
+                : "'" . mysqli_real_escape_string($conn, (string) $value) . "'";
         }
-        $sql = 'INSERT INTO ' . $table . '(' . trim($field_list, ',') . ') VALUES (' . trim($value_list, ',') . ')';
+        $sql = 'INSERT INTO `' . str_replace('`', '', $table) . '` ('
+            . implode(',', $fields) . ') VALUES (' . implode(',', $values) . ')';
+        $result = mysqli_query($conn, $sql);
+        $this->lastInsertId = $result ? mysqli_insert_id($conn) : 0;
 
-        return mysqli_query($this->connect_db(), $sql);
+        return $result;
     }
     
     public function lastInsertId()
     {
-        return mysqli_insert_id($this->connect_db());
+        return $this->lastInsertId;
     }
     public function update($table, $data, $where)
     {
@@ -272,7 +279,7 @@ class System
 
     public function getEmail($data, $key) {
         $data = json_decode($data, true);
-        if (array_key_exists($key, $data)) {
+        if (is_array($data) && array_key_exists($key, $data)) {
             return $data[$key];
         } else {
             return false;
@@ -441,9 +448,14 @@ class System
 
     public function post_card($request_id, $telco, $pin, $serial, $amount, $partner_id, $partner_key)
     {
+        if (empty($partner_id) || empty($partner_key)) {
+            return [
+                'status' => 0,
+                'message' => 'Chưa cấu hình đối tác nạp thẻ',
+            ];
+        }
 
-        $partner_id = "2300001209";
-        $partner_key = "e0695769614ebb8b89332fab99479d98";
+        $callbackUrl = getenv('CARD_CALLBACK_URL') ?: FULL_URL('/callback');
 
         $data = array(
             'telco' => $telco,
@@ -454,7 +466,7 @@ class System
             'partner_id' => $partner_id,
             'sign' => md5($partner_key . $pin . $serial),
             'command' => 'charging',
-            'callback_url' => 'https://venus.meliodas.info.vn/callback'
+            'callback_url' => $callbackUrl
         );
 
         $curl = curl_init();
@@ -464,7 +476,8 @@ class System
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_ENCODING => '',
             CURLOPT_MAXREDIRS => 10,
-            CURLOPT_TIMEOUT => 0,
+            CURLOPT_CONNECTTIMEOUT => 10,
+            CURLOPT_TIMEOUT => 30,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
             CURLOPT_CUSTOMREQUEST => 'GET',
@@ -474,9 +487,17 @@ class System
         ]);
 
         $response = curl_exec($curl);
-
+        $curlError = curl_error($curl);
         curl_close($curl);
-        return json_decode($response, true);
+        $decoded = is_string($response) ? json_decode($response, true) : null;
+        if (!is_array($decoded)) {
+            return [
+                'status' => 0,
+                'message' => $curlError !== '' ? 'Không thể kết nối dịch vụ nạp thẻ' : 'Dịch vụ nạp thẻ trả về dữ liệu không hợp lệ',
+            ];
+        }
+
+        return $decoded;
     }
 
 

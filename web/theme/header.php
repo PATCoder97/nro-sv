@@ -74,7 +74,11 @@
         </div>
     </div>
 </div>
-<?php if($user){ ?>
+<?php if($user){
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+?>
 <?php if($user['active'] == 0){ ?>
 <div class="modal fade" id="modalActive" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
     aria-labelledby="staticBackdropLabel" aria-hidden="true">
@@ -93,6 +97,7 @@
                     <p class="text-center">Bạn có thể mở khóa lại các chức năng đã bị khóa trên website lẫn trong game
                         như: bình luận, chức năng PK, trao đổi vật phẩm...</b></p>
                     <input name="username" type="hidden" value="<?php echo $user['username']; ?>" />
+                    <input name="csrf_token" type="hidden" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>" />
                     <div class="d-flex align-items-center justify-content-center py-2">
                         <button type="submit" href="<?php echo getCurrentURL(); ?>" class="btn btn-sm btn-theme">Kích
                             hoạt ngay</button>
@@ -103,7 +108,7 @@
     </div>
 </div>
 <?php } ?>
-<?php if($CVH->getEmail($user['email'], 'verify') === 'false'){ ?>
+<?php if($CVH->getEmail($user['email'], 'verify') !== 'true'){ ?>
 <div class="modal fade" id="modalEmail" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
     aria-labelledby="staticBackdropLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-scrollable">
@@ -115,6 +120,7 @@
             <div class="modal-body">
                 <form cvhvn="true" method="POST" action="/ajax/users/email.php" href="<?php echo getCurrentURL(); ?>"
                     class="was-validated">
+                    <input name="csrf_token" type="hidden" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>" />
                     <p class="text-center">Liên kết email để tránh trường hợp quên mật khẩu bạn có thể lấy lại.</b></p>
                     <div class="mb-3">
                         <input class="form-control" name="email" type="email" placeholder="Nhập email cần liên kết"
@@ -150,6 +156,7 @@
             <div class="modal-body">
                 <form cvhvn="true" method="POST" action="/ajax/users/changepass.php"
                     href="<?php echo getCurrentURL(); ?>">
+                    <input name="csrf_token" type="hidden" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>" />
                     <div class="mb-3">
                         <input class="form-control" name="mkcu" type="password" placeholder="Nhập mật khẩu cũ"
                             required />

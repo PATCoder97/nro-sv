@@ -8,12 +8,17 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/cvhvn/autoload.php";
 
 if ($user) {
 
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'] ?? '', $_POST['csrf_token'])) {
+        $CVH->Ex(false, "Phiên làm việc không hợp lệ, vui lòng tải lại trang!");
+        exit;
+    }
+
     $player = $CVH->player($user['id']);
 
-    $mathe = $_POST["code"];
-    $serial = $_POST["serial"];
-    $loaithe = $_POST["type"];
-    $menhgia = $_POST["amount"];
+    $mathe = trim($_POST["code"] ?? '');
+    $serial = trim($_POST["serial"] ?? '');
+    $loaithe = trim($_POST["type"] ?? '');
+    $menhgia = filter_var($_POST["amount"] ?? null, FILTER_VALIDATE_INT);
 
 
     if ($loaithe && $menhgia && $mathe && $serial) {
@@ -23,7 +28,7 @@ if ($user) {
         $huydepzaii = $CVH->post_card($tranid, $loaithe, $mathe, $serial, $menhgia, $config['partner_id'], $config['partner_key']);
 
 
-        if ($huydepzaii['status'] == 99) {
+        if (is_array($huydepzaii) && ($huydepzaii['status'] ?? null) == 99) {
             $table = "cvh_recharge";
             $data = array(
                 "id" => null,
@@ -71,7 +76,7 @@ if ($user) {
             
             sendTele(templateTele($telegram_msg));
 
-            $CVH->Ex(false, $huydepzaii['message']);
+            $CVH->Ex(false, $huydepzaii['message'] ?? 'Không thể kết nối dịch vụ nạp thẻ!');
 
         }
 

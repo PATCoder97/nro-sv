@@ -35,6 +35,7 @@
                         <div class="card-body pb-2 py-5">
                             <form cvhvn="true" method="POST" action="/ajax/users/recharge.php"
                                 href="<?php echo FULL_URL('/nap-tien'); ?>">
+                                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>">
                                 <div class="row">
                                     <div class="col-xl-6">
                                         <div class="form-group mb-2">

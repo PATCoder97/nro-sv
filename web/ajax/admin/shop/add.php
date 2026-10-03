@@ -6,14 +6,28 @@ if (empty($_SERVER['HTTP_REFERER'])) {
 }
 require_once $_SERVER['DOCUMENT_ROOT'] . "/cvhvn/autoload.php";
 
-if ($_POST['item'] || $_POST['item'] === '0' && $_POST['price'] || $_POST['price'] === '0' && $_POST['slot']) {
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    $CVH->Ex(false, "Phương thức không hợp lệ!");
+    exit();
+}
+if (empty($user) || empty($user['is_admin'])) {
+    $CVH->Ex(false, "Bạn không có quyền thực hiện thao tác này!");
+    exit();
+}
+if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'] ?? '', $_POST['csrf_token'])) {
+    $CVH->Ex(false, "CSRF token không hợp lệ!");
+    exit();
+}
+
+if (isset($_POST['item'], $_POST['price'], $_POST['slot'])
+    && $_POST['item'] !== '' && $_POST['price'] !== '' && $_POST['slot'] !== '') {
 	$gender = isset($_POST['gender']) ? intval($_POST['gender']) : 0;
-    if (isset($user['is_admin'])) {
+    if (!empty($user['is_admin'])) {
         $itemz = ($_POST['item']);
         $price = ($_POST['price']);
         $slot = ($_POST['slot']);
-        $option_id = ($_POST['option_id']);
-        $param_option = ($_POST['param_option']);
+        $option_id = $_POST['option_id'] ?? [];
+        $param_option = $_POST['param_option'] ?? [];
         
         // Luôn đảm bảo có option mặc định
         $data = array();

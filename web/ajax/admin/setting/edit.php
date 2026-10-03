@@ -7,6 +7,11 @@ if (empty($_SERVER['HTTP_REFERER'])) {
 
 require_once $_SERVER['DOCUMENT_ROOT'] . "/cvhvn/autoload.php";
 
+if (empty($user) || empty($user['is_admin'])) {
+    $CVH->Ex(false, "Bạn không có quyền thực hiện thao tác này!");
+    exit();
+}
+
 $title = $_POST["title"];
 $author = $_POST["author"];
 $description = $_POST["description"];

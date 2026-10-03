@@ -1,115 +1,122 @@
 <?php
-// Bảo mật: Kiểm tra referer
 if (empty($_SERVER['HTTP_REFERER'])) {
     header('HTTP/1.0 403 Forbidden');
     echo "Forbidden: You don't have permission to access this resource.";
     exit();
 }
 
-// Bảo mật: Kiểm tra method POST
+require_once $_SERVER['DOCUMENT_ROOT'] . "/cvhvn/autoload.php";
+header('Content-Type: application/json; charset=utf-8');
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('HTTP/1.0 405 Method Not Allowed');
-    echo "Method not allowed";
+    $CVH->Ex(false, "Phương thức không hợp lệ!");
     exit();
 }
-
-require_once $_SERVER['DOCUMENT_ROOT'] . "/cvhvn/autoload.php";
-
-// Bảo mật: Kiểm tra session và user
 if (!$user) {
     $CVH->Ex(false, "Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại!");
     exit();
 }
-
-// Bảo mật: Rate limiting - giới hạn 1 request/giây
-$rate_limit_key = 'buy_rate_limit_' . $user['id'];
-$current_time = time();
-if (isset($_SESSION[$rate_limit_key]) && ($current_time - $_SESSION[$rate_limit_key]) < 1) {
-    $CVH->Ex(false, "Vui lòng chờ 1 giây trước khi thực hiện giao dịch tiếp theo!");
+if ((int) ($user['ban'] ?? 0) !== 0) {
+    $CVH->Ex(false, "Tài khoản của bạn đang bị khóa!");
     exit();
 }
-$_SESSION[$rate_limit_key] = $current_time;
 
-// Bảo mật: CSRF Protection using database
+$rateLimitKey = 'buy_rate_limit_' . $user['id'];
+$currentTime = time();
+if (isset($_SESSION[$rateLimitKey]) && ($currentTime - $_SESSION[$rateLimitKey]) < 1) {
+    $CVH->Ex(false, "Vui lòng chờ 1 giây trước giao dịch tiếp theo!");
+    exit();
+}
+$_SESSION[$rateLimitKey] = $currentTime;
+
 if (!isset($_POST['csrf_token']) || !$CVH->validateCSRFToken($user['id'], $_POST['csrf_token'])) {
     $CVH->Ex(false, "Token bảo mật không hợp lệ!");
     exit();
 }
 
-// Bảo mật: Validate input
-$id = isset($_POST['Tempid']) ? intval($_POST['Tempid']) : 0;
-if ($id <= 0) {
+$itemId = (int) ($_POST['Tempid'] ?? 0);
+if ($itemId <= 0) {
     $CVH->Ex(false, "ID sản phẩm không hợp lệ!");
     exit();
 }
 
-// Bảo mật: Kiểm tra item có tồn tại và active không
-$row = $CVH->get_row("SELECT * FROM `cvh_sell_item` WHERE `id` = $id AND `active` = 1");
-if (!$row) {
-    $CVH->Ex(false, "Sản phẩm không tồn tại hoặc đã bị vô hiệu hóa!");
+$player = $CVH->player($user['id']);
+if (!$player) {
+    $CVH->Ex(false, "Vui lòng tạo nhân vật trước khi mua vật phẩm!");
     exit();
 }
 
-// Bảo mật: Kiểm tra slot còn lại
-if ($row['slot'] < 1) {
-    $CVH->Ex(false, "Sản phẩm đã hết số lượt mua!");
-    exit();
-}
-
-// Bảo mật: Kiểm tra tiền trong tài khoản
-if ($user['vnd'] < $row['price']) {
-    $CVH->Ex(false, "Tài khoản của bạn không đủ " . number_format($row["price"]) . "đ vui lòng nạp thêm tiền để thực hiện giao dịch!");
-    exit();
-}
-
-// Bảo mật: Kiểm tra user không bị khóa
-if (isset($user['status']) && $user['status'] != 1) {
-    $CVH->Ex(false, "Tài khoản của bạn đã bị khóa!");
-    exit();
-}
-
-// Bảo mật: Transaction để tránh race condition
-mysqli_begin_transaction($CVH->connect_db());
-
+$conn = $CVH->connect_db();
 try {
-    // Kiểm tra lại slot và tiền sau khi bắt đầu transaction
-    $current_item = $CVH->get_row("SELECT slot FROM `cvh_sell_item` WHERE `id` = $id FOR UPDATE");
-    $current_user = $CVH->get_row("SELECT vnd FROM `account` WHERE `id` = " . $user['id'] . " FOR UPDATE");
-    
-    if (!$current_item || $current_item['slot'] < 1) {
-        throw new Exception("Sản phẩm đã hết số lượt mua!");
+    $conn->begin_transaction();
+
+    $itemStmt = $conn->prepare(
+        'SELECT slot, price, users_buy FROM cvh_sell_item WHERE id = ? AND active = 1 FOR UPDATE'
+    );
+    $itemStmt->bind_param('i', $itemId);
+    $itemStmt->execute();
+    $itemResult = $itemStmt->get_result();
+    $item = $itemResult ? $itemResult->fetch_assoc() : null;
+    $itemStmt->close();
+
+    if (!$item) {
+        throw new RuntimeException("Sản phẩm không tồn tại hoặc đã bị vô hiệu hóa!");
     }
-    
-    if (!$current_user || $current_user['vnd'] < $row['price']) {
-        throw new Exception("Tài khoản không đủ tiền!");
+    if ((int) $item['slot'] < 1) {
+        throw new RuntimeException("Sản phẩm đã hết số lượng!");
     }
-    
-    // Thực hiện giao dịch
-    $player = $CVH->player($user['id']);
-    
-    // Ghi log mua hàng
-    $CVH->addBuy($id, $player['id'], time(), 0);
-    
-    // Cập nhật slot
-    $data = array("slot" => $row['slot'] - 1);
-    $CVH->update("cvh_sell_item", $data, 'id = ' . $id);
-    
-    // Trừ tiền thành viên
-    $table = 'account';
-    $where = 'username = "' . mysqli_real_escape_string($CVH->connect_db(), $user['username']) . '"';
-    $CVH->tru($table, "vnd", $row['price'], $where);
-    
-    // Commit transaction
-    mysqli_commit($CVH->connect_db());
-    
-    // Ghi log bảo mật
-    error_log("PURCHASE: User {$user['username']} (ID: {$user['id']}) purchased item ID: $id for " . number_format($row['price']) . " VND at " . date('Y-m-d H:i:s'));
-    
-    $CVH->Ex(true, "Mua vật phẩm thành công vui lòng vào game để nhận!");
-    
-} catch (Exception $e) {
-    // Rollback nếu có lỗi
-    mysqli_rollback($CVH->connect_db());
-    $CVH->Ex(false, $e->getMessage());
+
+    $userId = (int) $user['id'];
+    $userStmt = $conn->prepare('SELECT vnd FROM account WHERE id = ? FOR UPDATE');
+    $userStmt->bind_param('i', $userId);
+    $userStmt->execute();
+    $userResult = $userStmt->get_result();
+    $lockedUser = $userResult ? $userResult->fetch_assoc() : null;
+    $userStmt->close();
+
+    $price = max(0, (int) $item['price']);
+    if (!$lockedUser || (int) $lockedUser['vnd'] < $price) {
+        throw new RuntimeException("Tài khoản không đủ " . number_format($price) . "đ!");
+    }
+
+    $buyers = json_decode((string) $item['users_buy'], true);
+    if (!is_array($buyers)) {
+        $buyers = [];
+    }
+    array_unshift($buyers, [
+        'uid' => (int) $player['id'],
+        'status' => 0,
+        'time' => time(),
+    ]);
+    $buyersJson = json_encode($buyers, JSON_UNESCAPED_UNICODE);
+
+    $itemUpdate = $conn->prepare(
+        'UPDATE cvh_sell_item SET slot = slot - 1, users_buy = ? WHERE id = ? AND slot > 0'
+    );
+    $itemUpdate->bind_param('si', $buyersJson, $itemId);
+    $itemUpdate->execute();
+    if ($itemUpdate->affected_rows !== 1) {
+        $itemUpdate->close();
+        throw new RuntimeException("Sản phẩm vừa hết số lượng, vui lòng thử lại!");
+    }
+    $itemUpdate->close();
+
+    $balanceUpdate = $conn->prepare('UPDATE account SET vnd = vnd - ? WHERE id = ? AND vnd >= ?');
+    $balanceUpdate->bind_param('iii', $price, $userId, $price);
+    $balanceUpdate->execute();
+    if ($balanceUpdate->affected_rows !== 1) {
+        $balanceUpdate->close();
+        throw new RuntimeException("Số dư đã thay đổi, vui lòng thử lại!");
+    }
+    $balanceUpdate->close();
+
+    $conn->commit();
+    error_log("PURCHASE: User {$user['username']} (#{$userId}) purchased shop item #{$itemId} for {$price} VND");
+    $CVH->Ex(true, "Mua vật phẩm thành công, vui lòng vào game để nhận!");
+} catch (Throwable $error) {
+    $conn->rollback();
+    $CVH->Ex(false, $error instanceof RuntimeException
+        ? $error->getMessage()
+        : "Không thể hoàn tất giao dịch, vui lòng thử lại!");
 }
 ?>

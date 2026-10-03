@@ -2,8 +2,8 @@
 $kmess = 16; // Số phim hiện trong mỗi page
 $page = isset($_REQUEST['page']) && $_REQUEST['page'] > 0 ? intval($_REQUEST['page']) : 1;
 $start = isset($_REQUEST['page']) ? $page * $kmess - $kmess : (isset($_GET['start']) ? abs(intval($_GET['start'])) : 0);
-$result = mysqli_query($CVH->connect_db(), "SELECT * FROM `cvh_giftcode` ORDER BY `time` DESC LIMIT $start, $kmess");
-$tong = mysqli_num_rows(mysqli_query($CVH->connect_db(), "SELECT * FROM `cvh_giftcode`"));
+$result = mysqli_query($CVH->connect_db(), "SELECT * FROM `giftcode` ORDER BY `datecreate` DESC LIMIT $start, $kmess");
+$tong = mysqli_num_rows(mysqli_query($CVH->connect_db(), "SELECT * FROM `giftcode`"));
 // Tạo CSRF token cho form admin
 if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
@@ -49,7 +49,8 @@ if (empty($_SESSION['csrf_token'])) {
                             <div class="input-group mb-3">
                                 <div class="w-100">
                                     <label class="form-label mb-1">Mã giftcode</label>
-                                    <input type="text" class="form-control" name="code" placeholder="Nhập mã giftcode (ví dụ: SUMMER2025)">
+                                    <input type="text" class="form-control" name="code" minlength="3" maxlength="100"
+                                        pattern="[A-Za-z0-9_-]+" required placeholder="Nhập mã giftcode (ví dụ: SUMMER2025)">
                                 </div>
                             </div>
                         </div>
@@ -57,7 +58,7 @@ if (empty($_SESSION['csrf_token'])) {
                             <div class="input-group mb-3">
                                 <div class="w-100">
                                     <label class="form-label mb-1">Số lượt nhập (tối đa)</label>
-                                    <input type="number" class="form-control" name="count" placeholder="Ví dụ: 1000" min="0" step="1" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+                                    <input type="number" class="form-control" name="count" required placeholder="Ví dụ: 1000" min="1" step="1" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
                                 </div>
                             </div>
                         </div>
@@ -65,7 +66,7 @@ if (empty($_SESSION['csrf_token'])) {
                             <div class="input-group mb-3">
                                 <div class="w-100">
                                     <label class="form-label mb-1">Ngày hết hạn (HSD)</label>
-                                    <input type="date" class="form-control" name="hsd">
+                                    <input type="date" class="form-control" name="hsd" required>
                                 </div>
                             </div>
                         </div>
@@ -74,7 +75,7 @@ if (empty($_SESSION['csrf_token'])) {
                                 <div class="w-100">
                                     <label class="form-label mb-1">Chọn vật phẩm (ID - Tên)</label>
                                     <div class="input-group">
-                                        <select class="select2 form-control custom-select col-12" name="item" id="gift_item_select" data-live-search="true">
+                                        <select class="select2 form-control custom-select col-12" name="item" id="gift_item_select" data-live-search="true" required>
                                     <option value="">Chọn ID Vật Phẩm</option>
                                     <?php
                                         $query = $CVH->query("SELECT * FROM `item_template` ORDER BY `id` ASC");
@@ -106,7 +107,7 @@ if (empty($_SESSION['csrf_token'])) {
                             <div class="input-group mb-3">
                                 <div class="w-100">
                                     <label class="form-label mb-1">Số lượng vật phẩm nhận</label>
-                                    <input type="number" class="form-control" name="soluong" placeholder="Ví dụ: 1, 5, 10..." min="1" step="1" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+                                    <input type="number" class="form-control" name="soluong" value="1" required placeholder="Ví dụ: 1, 5, 10..." min="1" step="1" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
                                 </div>
                             </div>
                         </div>
@@ -213,6 +214,7 @@ if (empty($_SESSION['csrf_token'])) {
                                         <th>STATUS</th>
                                         <th>HSD</th>
                                         <th>TIME</th>
+                                        <th>THAO TÁC</th>
                                     </tr>
                                 </thead>
                                 <tbody id="result">
@@ -224,32 +226,33 @@ if (empty($_SESSION['csrf_token'])) {
                                     <tr class="search-items">
                                         <td>
                                             <span>
-                                                <?php echo $i++; ?>
+                                                <?php echo (int) $row['id']; ?>
                                             </span>
                                         </td>
                                         <td>
                                             <span>
-                                                <?php echo $row["code"]; ?>
+                                                <?php echo htmlspecialchars($row["code"]); ?>
                                             </span>
                                         </td>
                                         <td>
-                                            <span id="text">
-                                                <?php echo ($row["luot"]); ?>
+                                            <span id="text-<?php echo (int) $row['id']; ?>">
+                                                <?php echo (int) $row["count_left"]; ?>
                                             </span>
-                                            <div class="col-4" id="input" style="display:none;">
+                                            <div class="col-4" id="input-<?php echo (int) $row['id']; ?>" style="display:none;">
                                                 <input type="number" class="form-control form-control-sm" name="addLSD"
-                                                    id="addLSD" data-id="<?php echo $row['id']; ?>">
+                                                    id="addLSD-<?php echo (int) $row['id']; ?>" data-id="<?php echo (int) $row['id']; ?>">
                                             </div>
                                             <script>
-                                            var textElement = document.getElementById("text");
-                                            var inputContainer = document.getElementById("input");
+                                            (function() {
+                                            var textElement = document.getElementById("text-<?php echo (int) $row['id']; ?>");
+                                            var inputContainer = document.getElementById("input-<?php echo (int) $row['id']; ?>");
                                             textElement.addEventListener("click", function() {
                                                 textElement.hidden = true;
                                                 inputContainer.style.display = "block";
                                             });
 
                                             $(document).ready(function() {
-                                                $("#addLSD").on('change', function() {
+                                                $("#addLSD-<?php echo (int) $row['id']; ?>").on('change', function() {
                                                     var number = $(this).val();
                                                     var id = $(this).data("id");
                                                     if (number != '') {
@@ -277,21 +280,22 @@ if (empty($_SESSION['csrf_token'])) {
                                                     }
                                                 });
                                             });
+                                            })();
                                             </script>
                                         </td>
                                         <td>
                                             <span>
-                                                <?php echo ($row['status']); ?>
+                                                <?php echo ((int) $row['count_left'] > 0 && strtotime($row['expired']) > time()) ? 'Còn hiệu lực' : 'Hết hiệu lực'; ?>
                                             </span>
                                         </td>
                                         <td>
                                             <span>
-                                                <?php echo ($row['hsd']); ?>
+                                                <?php echo htmlspecialchars($row['expired']); ?>
                                             </span>
                                         </td>
                                         <td>
                                             <span>
-                                                <?php echo $CVH->time_ago($row['time']); ?>
+                                                <?php echo $CVH->time_ago(strtotime($row['datecreate'])); ?>
                                             </span>
                                         </td>
                                         <td>

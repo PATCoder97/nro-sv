@@ -21,7 +21,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
                 },
-                body: 'email=' + encodeURIComponent(email)
+                body: 'email=' + encodeURIComponent(email) +
+                    '&csrf_token=' + encodeURIComponent(document.querySelector('input[name="csrf_token"]')?.value || '')
             })
                 .then(response => response.json())
                 .then(data => {

@@ -49,19 +49,25 @@ if (!empty($_POST['username']) && !empty($_POST['password']) && !empty($_POST['r
         } else if ($CVH->check_user_register($username) == false) {
 
             $token = $CVH->Token($username, $password);
-            $table = "account";
-            $data = array(
-                "id" => null,
-                "username" => $username,
-                "password" => $password,
-                "email" => '',
-                "token" => $token,
-                "xsrf_token" => '',
-                "newpass" => ''
-            );
-            $CVH->insert($table, $data);
+            try {
+                $conn = $CVH->connect_db();
+                $stmt = $conn->prepare(
+                    "INSERT INTO account (username, password, email, token, xsrf_token, newpass)
+                     VALUES (?, ?, '', ?, '', '')"
+                );
+                $stmt->bind_param('sss', $username, $password, $token);
+                $stmt->execute();
+                $stmt->close();
 
-            $CVH->Ex(true, "Đăng ký thành công!");
+                $CVH->Ex(true, "Đăng ký thành công!");
+            } catch (Throwable $error) {
+                error_log('Đăng ký thất bại: ' . $error->getMessage());
+                if ((int) $error->getCode() === 1062) {
+                    $CVH->Ex(false, "Tài khoản đã tồn tại trên hệ thống!");
+                } else {
+                    $CVH->Ex(false, "Không thể đăng ký lúc này, vui lòng thử lại!");
+                }
+            }
 
         }
 

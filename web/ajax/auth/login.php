@@ -6,12 +6,19 @@ if (empty($_SERVER['HTTP_REFERER'])) {
 }
 require_once $_SERVER['DOCUMENT_ROOT'] . "/cvhvn/autoload.php";
 
-// Kiểm tra reCAPTCHA (chỉ khi được cấu hình)
-if (!empty($config['recaptcha_secret']) && !empty($_POST['g-recaptcha-response'])) {
+// Kiểm tra reCAPTCHA khi được cấu hình
+if (!empty($config['recaptcha_secret'])) {
     $recaptcha_secret = $config['recaptcha_secret'];
-    $recaptcha_response = $_POST['g-recaptcha-response'];
-    $verify = file_get_contents("https://www.google.com/recaptcha/api/siteverify?secret={$recaptcha_secret}&response={$recaptcha_response}");
-    $captcha_success = json_decode($verify);
+    $recaptcha_response = $_POST['g-recaptcha-response'] ?? '';
+    if ($recaptcha_response === '') {
+        $CVH->Ex(false, "Vui lòng xác thực captcha!");
+        exit();
+    }
+    $verify = @file_get_contents(
+        'https://www.google.com/recaptcha/api/siteverify?secret=' . urlencode($recaptcha_secret)
+        . '&response=' . urlencode($recaptcha_response)
+    );
+    $captcha_success = @json_decode($verify);
     if (empty($captcha_success) || empty($captcha_success->success)) {
         $CVH->Ex(false, "Vui lòng xác thực captcha!");
         exit();
@@ -42,14 +49,22 @@ if (!empty($_POST['username']) && !empty($_POST['password'])) {
             // Tạo bảng nếu chưa có
             $conn->query("CREATE TABLE IF NOT EXISTS cvh_sessions (id INT AUTO_INCREMENT PRIMARY KEY, user_id INT NOT NULL, token VARCHAR(128) NOT NULL UNIQUE, expires_at DATETIME NOT NULL, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP)");
 
-            $expiresAt = date('Y-m-d H:i:s', time() + 7*24*60*60);
-            $stmt2 = $conn->prepare("INSERT INTO cvh_sessions(user_id, token, expires_at) VALUES (?, ?, ?)");
-            if ($stmt2) { $stmt2->bind_param('iss', $account['id'], $sessionToken, $expiresAt); $stmt2->execute(); $stmt2->close(); }
+            try {
+                $expiresAt = date('Y-m-d H:i:s', time() + 7 * 24 * 60 * 60);
+                $stmt2 = $conn->prepare("INSERT INTO cvh_sessions(user_id, token, expires_at) VALUES (?, ?, ?)");
+                $accountId = (int) $account['id'];
+                $stmt2->bind_param('iss', $accountId, $sessionToken, $expiresAt);
+                $stmt2->execute();
+                $stmt2->close();
 
-            $cookieOptions = ['expires' => time() + 7*24*60*60, 'path' => '/', 'secure' => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on', 'httponly' => true, 'samesite' => 'Lax'];
-            setcookie('session_token', $sessionToken, $cookieOptions);
+                $cookieOptions = ['expires' => time() + 7 * 24 * 60 * 60, 'path' => '/', 'secure' => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on', 'httponly' => true, 'samesite' => 'Lax'];
+                setcookie('session_token', $sessionToken, $cookieOptions);
 
-            $CVH->Ex(true, "Đăng nhập thành công!");
+                $CVH->Ex(true, "Đăng nhập thành công!");
+            } catch (Throwable $error) {
+                error_log('Tạo phiên đăng nhập thất bại: ' . $error->getMessage());
+                $CVH->Ex(false, "Không thể tạo phiên đăng nhập, vui lòng thử lại!");
+            }
         }
     }
 

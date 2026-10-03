@@ -6,64 +6,69 @@ if (empty($_SERVER['HTTP_REFERER'])) {
 }
 
 require_once $_SERVER['DOCUMENT_ROOT'] . "/cvhvn/autoload.php";
+header('Content-Type: application/json; charset=utf-8');
 
-$email = $_POST["email"];
-$current_time = time();
-
-if ($user) {
- if(!$CVH->check_email_exist($email)){
-    $rand = rand(100000, 999999);
-    $timecode_expiry = $current_time + 120;
-
-    sendMail($email, 'Mã Xác Thực Email', '
-    <body style="background-color:#eaf4fb; font-family:Arial,sans-serif; margin:0; padding:0;">
-      <div style="max-width:500px; margin:40px auto; background:#fff; border-radius:10px; box-shadow:0 4px 16px rgba(79,140,255,0.10); overflow:hidden;">
-        <div style="background:#4f8cff; padding:32px 0 16px 0; text-align:center;">
-          <img src="https://files.catbox.moe/l2ixwq.png" alt="Logo" style="height:60px; margin-bottom:12px;">
-          <h2 style="margin:0; font-size:26px; color:#fff; letter-spacing:1px;">NGỌC RỒNG VENUS</h2>
-        </div>
-        <div style="padding:32px 24px 24px 24px;">
-          <p style="font-size:16px; color:#222;">Xin chào <b>'.$user["username"].'</b>,</p>
-          <p style="font-size:15px; color:#222; margin-bottom:24px;">
-            Đây là <b>mã xác thực tài khoản</b> gồm 6 chữ số mà hệ thống đã gửi cho bạn.<br>
-            Vui lòng nhập mã này vào website để xác thực email.
-          </p>
-          <div style="background:#e3f0ff; border-radius:8px; padding:22px; text-align:center; margin-bottom:24px;">
-            <span style="font-size:32px; font-weight:bold; letter-spacing:4px; color:#1976d2;">'.$rand.'</span>
-          </div>
-          <p style="font-size:15px; color:#222;">
-            <b>Lưu ý:</b> Mã này có giá trị trong <b>2 phút</b> kể từ khi nhận được email.<br>
-            Nếu bạn không thực hiện yêu cầu này, hãy bỏ qua email này.
-          </p>
-          <hr style="margin:32px 0 16px 0; border:none; border-top:1px solid #e3f0ff;">
-          <p style="font-size:13px; color:#4f8cff; text-align:center;">
-            Trân trọng,<br>
-            <b>Ngọc Rồng Venus</b><br>
-            <span style="color:#888;">venus.meliodas.info.vn</span>
-          </p>
-        </div>
-      </div>
-    </body>
-    ');
-    $us = $user["username"];
-    $table = "account";
-    
-    $data = array(
-        "email" => json_encode(array(
-            "email" => $email,
-            "verify" => "false",
-            "code" => $rand,
-            "timecode" => date('Y-m-d H:i:s', $timecode_expiry)
-        ))
-    );
-
-    $CVH->update($table, $data, "username = '" . $us . "'");
-
-    $CVH->Ex(true, "Mã xác thực đã được gửi đến email của bạn!");
-}else{
-    $CVH->Ex(false, "Email đã tồn tại ở tài khoản khác!");
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    $CVH->Ex(false, "Phương thức không hợp lệ!");
+    exit();
 }
-} else {
-    $CVH->Ex(false, "Bạn chưa đăng nhập, vui lòng đăng nhập để thực hiện thao tác này!");
+if (!$user) {
+    $CVH->Ex(false, "Bạn chưa đăng nhập!");
+    exit();
 }
+if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'] ?? '', $_POST['csrf_token'])) {
+    $CVH->Ex(false, "CSRF token không hợp lệ!");
+    exit();
+}
+
+$email = filter_var(trim((string) ($_POST['email'] ?? '')), FILTER_VALIDATE_EMAIL);
+if (!$email) {
+    $CVH->Ex(false, "Địa chỉ email không hợp lệ!");
+    exit();
+}
+
+$conn = $CVH->connect_db();
+$userId = (int) $user['id'];
+$duplicate = $conn->prepare(
+    "SELECT id FROM account
+     WHERE id <> ? AND JSON_UNQUOTE(JSON_EXTRACT(email, '$.email')) = ?
+     LIMIT 1"
+);
+$duplicate->bind_param('is', $userId, $email);
+$duplicate->execute();
+$duplicateResult = $duplicate->get_result();
+$emailInUse = $duplicateResult && $duplicateResult->num_rows > 0;
+$duplicate->close();
+
+if ($emailInUse) {
+    $CVH->Ex(false, "Email đã được dùng cho tài khoản khác!");
+    exit();
+}
+
+$verificationCode = (string) random_int(100000, 999999);
+$expiresAt = time() + 120;
+$siteHost = htmlspecialchars($_SERVER['HTTP_HOST'] ?? 'Teamobi 2026', ENT_QUOTES, 'UTF-8');
+$username = htmlspecialchars($user['username'], ENT_QUOTES, 'UTF-8');
+$body = "<h2>Xác thực email</h2>"
+    . "<p>Xin chào <strong>{$username}</strong>, mã xác thực của bạn là:</p>"
+    . "<p style=\"font-size:30px;font-weight:bold;letter-spacing:4px\">{$verificationCode}</p>"
+    . "<p>Mã có hiệu lực trong 2 phút.</p><p>{$siteHost}</p>";
+
+if (!sendMail($email, 'Mã xác thực email', $body)) {
+    $CVH->Ex(false, "Không thể gửi email. Vui lòng kiểm tra cấu hình SMTP!");
+    exit();
+}
+
+$emailData = json_encode([
+    'email' => $email,
+    'verify' => 'false',
+    'code' => $verificationCode,
+    'timecode' => date('Y-m-d H:i:s', $expiresAt),
+], JSON_UNESCAPED_UNICODE);
+$update = $conn->prepare('UPDATE account SET email = ? WHERE id = ?');
+$update->bind_param('si', $emailData, $userId);
+$update->execute();
+$update->close();
+
+$CVH->Ex(true, "Mã xác thực đã được gửi đến email của bạn!");
 ?>
