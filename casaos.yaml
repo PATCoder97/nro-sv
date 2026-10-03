@@ -19,10 +19,6 @@ services:
       - target: 14445
         published: "14445"
         protocol: tcp
-    volumes:
-      - type: volume
-        source: game-logs
-        target: /app/log
     depends_on:
       database:
         condition: service_healthy
@@ -56,7 +52,7 @@ services:
       TZ: Asia/Ho_Chi_Minh
     volumes:
       - type: bind
-        source: /DATA/AppData/$AppID/database
+        source: /DATA/AppData/teamobi2026
         target: /var/lib/mysql
     healthcheck:
       test:
@@ -104,9 +100,6 @@ networks:
   teamobi-network:
     driver: bridge
 
-volumes:
-  game-logs:
-
 x-casaos:
   id: com.patcoder97.teamobi2026
   main: phpmyadmin
@@ -132,6 +125,6 @@ x-casaos:
   category: Others
   architectures:
     - amd64
-  version: "1.0.0"
+  version: "1.0.1"
   update_at: "2026-10-03"
   repo: https://github.com/PATCoder97/nro-sv

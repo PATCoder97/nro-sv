@@ -58,6 +58,8 @@ Sau khi GitHub Actions build thanh cong, vao CasaOS, chon **App Store > Custom I
 
 Truoc khi cai, sua `SERVER_IP` thanh IP LAN/IP public/domain cua may CasaOS. Game dung TCP `14445`; phpMyAdmin mo tai cong HTTP `18080`. Dang nhap phpMyAdmin bang user `root`, mat khau mac dinh `teamobi2026-root-test` va nen doi mat khau neu trien khai ngoai moi truong test.
 
+MariaDB luu du lieu tai `/DATA/AppData/teamobi2026`. File CasaOS dung duong dan co dinh nay de tuong thich voi Custom Install, noi bien `$AppID` co the khong duoc thay the giong nhu app trong Store.
+
 File CasaOS mac dinh dung hai image Docker Hub:
 
 - `patcoder97/teamobi2026:latest`
