@@ -15,6 +15,7 @@ Options -Indexes
     # Chỉ cho phép truy cập từ domain chính
     <IfModule mod_rewrite.c>
         RewriteEngine On
+        RewriteCond %{HTTP_REFERER} !^https?://(www\.)?nro\.tlab\.io\.vn(?::[0-9]+)?(/|$) [NC]
         RewriteCond %{HTTP_REFERER} !^https?://(www\.)?venus\.meliodas\.info\.vn [NC]
         RewriteCond %{HTTP_REFERER} !^https?://(www\.)?localhost [NC]
         RewriteCond %{HTTP_REFERER} !^https?://(www\.)?127\.0\.0\.1 [NC]
@@ -56,4 +57,4 @@ Options -Indexes
     Header always set X-Frame-Options DENY
     Header always set X-XSS-Protection "1; mode=block"
     Header always set Referrer-Policy "strict-origin-when-cross-origin"
-</IfModule> 
+</IfModule>
