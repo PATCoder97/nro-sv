@@ -60,6 +60,17 @@ jobs:
             type=ref,event=tag
             type=sha,prefix=sha-
 
+      - name: Generate web image tags and labels
+        id: web-meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/teamobi2026-web
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=ref,event=branch
+            type=ref,event=tag
+            type=sha,prefix=sha-
+
       - name: Build and push game image
         uses: docker/build-push-action@v7
         with:
@@ -83,3 +94,15 @@ jobs:
           labels: ${{ steps.database-meta.outputs.labels }}
           cache-from: type=gha,scope=database
           cache-to: type=gha,mode=max,scope=database
+
+      - name: Build and push web image
+        uses: docker/build-push-action@v7
+        with:
+          context: ./web
+          file: ./web/Dockerfile
+          push: true
+          platforms: linux/amd64
+          tags: ${{ steps.web-meta.outputs.tags }}
+          labels: ${{ steps.web-meta.outputs.labels }}
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=web

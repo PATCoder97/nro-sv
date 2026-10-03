@@ -1,0 +1,5 @@
+backup
+logs/*
+uploads/*
+.DS_Store
+*.log

@@ -1,0 +1,59 @@
+# Chặn truy cập trực tiếp vào thư mục
+Options -Indexes
+
+# Chặn tất cả truy cập trực tiếp
+<Files "*">
+    Order Deny,Allow
+    Deny from all
+</Files>
+
+# Chỉ cho phép truy cập file stats.php từ domain chính
+<Files "stats.php">
+    Order Allow,Deny
+    Allow from all
+    
+    # Chỉ cho phép truy cập từ domain chính
+    <IfModule mod_rewrite.c>
+        RewriteEngine On
+        RewriteCond %{HTTP_REFERER} !^https?://(www\.)?venus\.meliodas\.info\.vn [NC]
+        RewriteCond %{HTTP_REFERER} !^https?://(www\.)?localhost [NC]
+        RewriteCond %{HTTP_REFERER} !^https?://(www\.)?127\.0\.0\.1 [NC]
+        RewriteRule .* - [F,L]
+    </IfModule>
+</Files>
+
+# Chặn truy cập từ các bot và crawler không mong muốn
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    
+    # Chặn User-Agent xấu
+    RewriteCond %{HTTP_USER_AGENT} ^$ [OR]
+    RewriteCond %{HTTP_USER_AGENT} ^(java|curl|wget) [NC,OR]
+    RewriteCond %{HTTP_USER_AGENT} ^.*(libwww-perl|curl|wget|python|nikto|scan) [NC,OR]
+    RewriteCond %{HTTP_USER_AGENT} ^.*(winhttp|HTTrack|clshttp|archiver|loader|email|harvest|extract|grab|miner) [NC]
+    RewriteRule .* - [F,L]
+</IfModule>
+
+# Bảo vệ khỏi SQL injection và XSS
+<IfModule mod_security.c>
+    SecRuleEngine On
+    SecRequestBodyAccess On
+    SecRule ARGS "@detectSQLi" "id:1000,phase:2,block,msg:'SQL Injection detected'"
+    SecRule ARGS "@detectXSS" "id:1001,phase:2,block,msg:'XSS detected'"
+</IfModule>
+
+# Chặn truy cập từ IP không được phép (nếu cần)
+# <Files "*">
+#     Order Deny,Allow
+#     Deny from 192.168.1.100
+#     Deny from 10.0.0.0/8
+#     Allow from all
+# </Files>
+
+# Thêm header bảo mật
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options nosniff
+    Header always set X-Frame-Options DENY
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule> 

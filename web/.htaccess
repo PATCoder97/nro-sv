@@ -1,0 +1,44 @@
+RewriteEngine On
+RewriteBase /
+
+RewriteCond %{REQUEST_URI} !^/ajax/ [NC]
+RewriteCond %{REQUEST_URI} !^/admin/ [NC]
+RewriteCond %{REQUEST_URI} !^/install/ [NC]
+
+
+RewriteCond %{REQUEST_URI} !^/index\.php$ [NC]
+RewriteCond %{REQUEST_URI} \.php$ [NC]
+RewriteCond %{HTTP_REFERER} !^.*index\.php [NC]
+RewriteRule ^.*$ - [F,L]
+
+RewriteCond %{REQUEST_URI} !^/admin/index\.php$ [NC]
+RewriteRule ^admin/(.*)$ /admin/index.php?request=$1 [QSA,L]
+
+# Xử lý routing cho API
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^api-girl/?$ /?request=api-girl [L,QSA]
+RewriteRule ^api-sexy/?$ /?request=api-sexy [L,QSA]
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php?request=$1 [QSA,L]
+
+# Allow access to AJAX files
+<Files "upload_ajax.php">
+    Require all granted
+</Files>
+
+<Files "get_upload_stats.php">
+    Require all granted
+</Files>
+
+# Allow POST requests
+<Limit POST>
+    Require all granted
+</Limit>
+
+# Enable CORS
+Header always set Access-Control-Allow-Origin "*"
+Header always set Access-Control-Allow-Methods "GET, POST, OPTIONS"
+Header always set Access-Control-Allow-Headers "Content-Type"

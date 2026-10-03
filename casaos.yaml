@@ -18,7 +18,7 @@ services:
     healthcheck:
       test:
         - CMD-SHELL
-        - mysqladmin ping -h 127.0.0.1 -u root -p"" --silent
+        - mysqladmin ping -h 127.0.0.1 -u root -p"$${MARIADB_ROOT_PASSWORD}" --silent
       timeout: 5s
       interval: 10s
       retries: 30
@@ -95,6 +95,84 @@ services:
     networks:
       - teamobi-network
     privileged: false
+  web-panel:
+    cpu_shares: 90
+    command: []
+    container_name: teamobi2026-web
+    depends_on:
+      database:
+        condition: service_healthy
+        required: true
+    deploy:
+      resources:
+        limits:
+          memory: 15866M
+    environment:
+      - CARD_PARTNER_ID=
+      - CARD_PARTNER_KEY=
+      - DB_HOST=database
+      - DB_NAME=team2026
+      - DB_PASSWORD=teamobi2026-test
+      - DB_PORT=3306
+      - DB_USER=teamobi
+      - RECAPTCHA_SECRET=
+      - RECAPTCHA_SITE_KEY=
+      - SEPAY_API_KEY=
+      - SEPAY_WEBHOOK_SECRET=
+      - SMTP_FROM=
+      - SMTP_FROM_NAME=Teamobi 2026
+      - SMTP_HOST=smtp.gmail.com
+      - SMTP_PASSWORD=
+      - SMTP_PORT=465
+      - SMTP_USERNAME=
+      - TELEGRAM_BOT_TOKEN=
+      - TELEGRAM_CHAT_ID=
+      - TZ=Asia/Ho_Chi_Minh
+    hostname: teamobi2026-web
+    image: patcoder97/teamobi2026-web:latest
+    labels:
+      icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/apache.png
+    ports:
+      - target: 80
+        published: "18081"
+        protocol: tcp
+    restart: unless-stopped
+    volumes:
+      - type: bind
+        source: /DATA/AppData/teamobi2026-web/logs
+        target: /var/www/html/logs
+      - type: bind
+        source: /DATA/AppData/teamobi2026-web/uploads
+        target: /var/www/html/uploads
+    x-casaos:
+      envs:
+        - container: SEPAY_API_KEY
+          description:
+            en_US: Optional SePay API key
+            vi_VN: Khóa API SePay, có thể để trống
+        - container: SEPAY_WEBHOOK_SECRET
+          description:
+            en_US: Optional SePay webhook secret
+            vi_VN: Mã bí mật webhook SePay, có thể để trống
+      ports:
+        - container: "80"
+          description:
+            en_US: Game website and administration panel
+            vi_VN: Website và trang quản trị game
+      volumes:
+        - container: /var/www/html/logs
+          description:
+            en_US: Website logs
+            vi_VN: Nhật ký website
+        - container: /var/www/html/uploads
+          description:
+            en_US: Website uploads
+            vi_VN: Tệp tải lên của website
+    devices: []
+    cap_add: []
+    networks:
+      - teamobi-network
+    privileged: false
   phpmyadmin:
     cpu_shares: 90
     command: []
@@ -143,22 +221,22 @@ x-casaos:
   author: PATCoder97
   category: Others
   description:
-    en_US: Teamobi 2026 game server. TCP port 14445; phpMyAdmin port 18080.
-    vi_VN: Máy chủ game Teamobi 2026. Cổng game TCP 14445; phpMyAdmin cổng 18080.
+    en_US: Teamobi 2026 game server with website, administration panel, MariaDB and phpMyAdmin.
+    vi_VN: Máy chủ game Teamobi 2026 kèm website quản trị, MariaDB và phpMyAdmin.
   developer: PATCoder97
   hostname: ""
   icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/java.png
   id: com.patcoder97.teamobi2026
   index: /
   is_uncontrolled: false
-  main: phpmyadmin
-  port_map: "18080"
+  main: web-panel
+  port_map: "18081"
   repo: https://github.com/PATCoder97/nro-sv
   scheme: http
   store_app_id: teamobi2026
   tagline:
-    en_US: Java game server with MariaDB and phpMyAdmin
-    vi_VN: Game server Java kèm MariaDB và phpMyAdmin
+    en_US: Java game server with web administration
+    vi_VN: Máy chủ game Java kèm website quản trị
   tips:
     before_install:
       en_US: Change SERVER_IP to your CasaOS LAN/public IP or domain before
@@ -170,4 +248,4 @@ x-casaos:
     en_US: Teamobi 2026 Server
     vi_VN: Máy chủ Teamobi 2026
   update_at: 2026-10-03T00:00:00Z
-  version: 1.0.1
+  version: 1.1.0

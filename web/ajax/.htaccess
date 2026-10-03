@@ -1,0 +1,43 @@
+# Chặn truy cập trực tiếp vào thư mục ajax
+Options -Indexes
+
+# Chặn tất cả truy cập trực tiếp
+<Files "*">
+    Order Deny,Allow
+    Deny from all
+</Files>
+
+# Chỉ cho phép truy cập các file PHP cần thiết
+<Files "*.php">
+    Order Allow,Deny
+    Allow from all
+    
+    # Chỉ cho phép truy cập từ domain chính
+    <IfModule mod_rewrite.c>
+        RewriteEngine On
+        RewriteCond %{HTTP_REFERER} !^https?://(www\.)?venus\.meliodas\.info\.vn [NC]
+        RewriteCond %{HTTP_REFERER} !^https?://(www\.)?localhost [NC]
+        RewriteCond %{HTTP_REFERER} !^https?://(www\.)?127\.0\.0\.1 [NC]
+        RewriteRule .* - [F,L]
+    </IfModule>
+</Files>
+
+# Chặn truy cập từ các bot và crawler
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    
+    # Chặn User-Agent xấu
+    RewriteCond %{HTTP_USER_AGENT} ^$ [OR]
+    RewriteCond %{HTTP_USER_AGENT} ^(java|curl|wget) [NC,OR]
+    RewriteCond %{HTTP_USER_AGENT} ^.*(libwww-perl|curl|wget|python|nikto|scan) [NC,OR]
+    RewriteCond %{HTTP_USER_AGENT} ^.*(winhttp|HTTrack|clshttp|archiver|loader|email|harvest|extract|grab|miner) [NC]
+    RewriteRule .* - [F,L]
+</IfModule>
+
+# Thêm header bảo mật
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options nosniff
+    Header always set X-Frame-Options DENY
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule> 

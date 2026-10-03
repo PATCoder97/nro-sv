@@ -42,6 +42,43 @@ services:
     volumes:
       - game-logs:/app/log
 
+  web-panel:
+    build:
+      context: ./web
+    image: ${WEB_DOCKER_IMAGE:-teamobi2026-web:latest}
+    restart: unless-stopped
+    depends_on:
+      database:
+        condition: service_healthy
+    environment:
+      DB_HOST: database
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME:-team2026}
+      DB_USER: ${DB_USER:-teamobi}
+      DB_PASSWORD: ${DB_PASSWORD:-change-me}
+      CARD_PARTNER_ID: ${CARD_PARTNER_ID:-}
+      CARD_PARTNER_KEY: ${CARD_PARTNER_KEY:-}
+      SEPAY_API_KEY: ${SEPAY_API_KEY:-}
+      SEPAY_WEBHOOK_SECRET: ${SEPAY_WEBHOOK_SECRET:-}
+      RECAPTCHA_SITE_KEY: ${RECAPTCHA_SITE_KEY:-}
+      RECAPTCHA_SECRET: ${RECAPTCHA_SECRET:-}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-465}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-Teamobi 2026}
+      TZ: Asia/Ho_Chi_Minh
+    ports:
+      - "${WEB_PORT:-18081}:80/tcp"
+    volumes:
+      - web-logs:/var/www/html/logs
+      - web-uploads:/var/www/html/uploads
+
 volumes:
   database-data:
   game-logs:
+  web-logs:
+  web-uploads:
