@@ -1,0 +1,46 @@
+services:
+  database:
+    image: mariadb:10.11
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: ${DB_NAME:-team2026}
+      MARIADB_USER: ${DB_USER:-teamobi}
+      MARIADB_PASSWORD: ${DB_PASSWORD:-change-me}
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-change-root-me}
+      TZ: Asia/Ho_Chi_Minh
+    volumes:
+      - database-data:/var/lib/mysql
+      - "./database team2026.sql:/docker-entrypoint-initdb.d/001-team2026.sql:ro"
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p\"$${MARIADB_ROOT_PASSWORD}\" --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  game-server:
+    build:
+      context: ./SRC
+    image: ${DOCKER_IMAGE:-teamobi2026:latest}
+    restart: unless-stopped
+    depends_on:
+      database:
+        condition: service_healthy
+    environment:
+      DB_HOST: database
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME:-team2026}
+      DB_USER: ${DB_USER:-teamobi}
+      DB_PASSWORD: ${DB_PASSWORD:-change-me}
+      SERVER_NAME: ${SERVER_NAME:-NRO}
+      SERVER_IP: ${SERVER_IP:-127.0.0.1}
+      SERVER_PORT: ${SERVER_PORT:-14445}
+      TZ: Asia/Ho_Chi_Minh
+    ports:
+      - "${SERVER_PORT:-14445}:${SERVER_PORT:-14445}/tcp"
+    volumes:
+      - game-logs:/app/log
+
+volumes:
+  database-data:
+  game-logs:

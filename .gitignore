@@ -1,0 +1,10 @@
+.env
+logs/
+
+# Local game client: contains a file larger than GitHub's normal file limit
+LÂU CỒ MOD/
+
+# Local/NetBeans build output
+SRC/build/
+SRC/dist/
+SRC/nbproject/private/

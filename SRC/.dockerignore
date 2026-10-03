@@ -1,0 +1,8 @@
+build/
+dist/
+sql/
+test/
+nbproject/private/
+20.jar
+*.bat
+*.log
