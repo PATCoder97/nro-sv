@@ -2,7 +2,9 @@ name: teamobi2026
 
 services:
   game-server:
-    image: patcoder97/teamobi2026:latest
+    # Pin the image that includes MariaDB Connector/J. This avoids CasaOS
+    # reusing an older locally cached `latest` image.
+    image: patcoder97/teamobi2026:sha-fcfff6a
     container_name: teamobi2026-game
     restart: unless-stopped
     environment:
@@ -126,6 +128,6 @@ x-casaos:
   category: Others
   architectures:
     - amd64
-  version: "1.0.3"
+  version: "1.0.4"
   update_at: "2026-10-03"
   repo: https://github.com/PATCoder97/nro-sv
